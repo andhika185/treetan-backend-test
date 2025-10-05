@@ -33,6 +33,7 @@ Route::group(['middleware' => 'secretkey'], function () {
 
         Route::apiResource('products', ProductController::class)->only(['index', 'show', 'store']);
         Route::post('/checkout', [OrderController::class, 'checkout']);
+        Route::apiResource('orders', OrderController::class)->only(['index', 'show']);
         Route::post('/orders/{order}/pay', [PaymentController::class, 'createInvoice']);
     });
 });

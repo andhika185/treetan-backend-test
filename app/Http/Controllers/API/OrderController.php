@@ -82,4 +82,30 @@ class OrderController extends Controller
             return response()->json(['message' => 'An unexpected error occurred. ' . $e->getMessage()], 500);
         }
     }
+    
+    public function index(Request $request)
+    {
+        // Mengambil semua order milik user yang sedang login
+        // Diurutkan dari yang paling baru
+        $orders = Order::where('user_id', $request->user()->id)
+                       ->latest()
+                       ->get();
+
+        return response()->json(['data' => $orders]);
+    }
+
+        public function show(Request $request, Order $order)
+    {
+        // Security Check!
+        // Pastikan order yang diminta adalah milik user yang sedang login.
+        if ($request->user()->id !== $order->user_id) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        // Eager load relasi 'items' dan di dalam 'items', muat juga relasi 'product'
+        // Ini untuk menampilkan detail produk di setiap item pesanan
+        $order->load('items.product');
+
+        return response()->json(['data' => $order]);
+    }
 }
