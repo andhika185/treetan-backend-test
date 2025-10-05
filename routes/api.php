@@ -5,6 +5,9 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\ProductController;
 use App\Http\Controllers\API\OrderController;
+use App\Http\Controllers\API\PaymentController;
+
+Route::post('/payment/webhook', [PaymentController::class, 'handleWebhook']);
 
 // Public routes for Register and Login
 Route::post('/register', [AuthController::class, 'register']);
@@ -18,4 +21,5 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     });
     Route::apiResource('products', ProductController::class)->only(['index', 'show', 'store']);
     Route::post('/checkout', [OrderController::class, 'checkout']);
+    Route::post('/orders/{order}/pay', [PaymentController::class, 'createInvoice']);
 });
