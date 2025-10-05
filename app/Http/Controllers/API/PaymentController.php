@@ -58,6 +58,7 @@ class PaymentController extends Controller
 
     public function handleWebhook(Request $request)
     {
+        // 1. Verifikasi token dari header
         $xenditCallbackToken = $request->header('x-callback-token');
         if ($xenditCallbackToken !== config('services.xendit.webhook_token')) {
             return response()->json(['message' => 'Invalid webhook token'], 403);
@@ -65,18 +66,30 @@ class PaymentController extends Controller
 
         $payload = $request->all();
 
-        if (isset($payload['status']) && $payload['status'] === 'PAID') {
-            $externalIdParts = explode('-', $payload['external_id']);
-            $orderId = $externalIdParts[1];
+        // 2. Cek apakah status 'PAID' dan external_id ada
+        if (isset($payload['status']) && $payload['status'] === 'PAID' && isset($payload['external_id'])) {
+            
+            // 3. VALIDASI FORMAT: Pastikan external_id dimulai dengan 'order-'
+            // Ini akan mengabaikan payload dari tombol "Test" atau invoice lain yang tidak relevan
+            if (str_starts_with($payload['external_id'], 'order-')) {
+                
+                $externalIdParts = explode('-', $payload['external_id']);
+                
+                // 4. VALIDASI JUMLAH BAGIAN: Pastikan hasil explode valid
+                if (count($externalIdParts) >= 2) {
+                    $orderId = $externalIdParts[1];
+                    $order = Order::find($orderId);
 
-            $order = Order::find($orderId);
-
-            if ($order && $order->status === 'pending') {
-                $order->status = 'paid';
-                $order->save();
+                    // 5. Update status order jika ditemukan dan masih pending
+                    if ($order && $order->status === 'pending') {
+                        $order->status = 'paid';
+                        $order->save();
+                    }
+                }
             }
         }
 
-        return response()->json(['message' => 'Webhook received successfully']);
+        // 6. Selalu kirim response 200 OK ke Xendit agar tidak dianggap gagal
+        return response()->json(['message' => 'Webhook received successfully.']);
     }
 }
